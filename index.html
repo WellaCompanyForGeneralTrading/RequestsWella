@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#173359">
+  <title>طلبات الموظفين - شركة ويلا</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root{--blue:#173359;--blue-hover:#0f2440;--bg:#fbf8f2;--border:#e2ded7}
+    body{background:var(--bg);color:#2b2b2b;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;padding-bottom:48px}
+    .wella-header{background:#fff;border-bottom:1px solid var(--border);padding:20px 0;box-shadow:0 2px 10px rgba(0,0,0,.03)}
+    .wella-title-text h2{color:var(--blue);font-size:1.15rem;font-weight:700;margin:0;letter-spacing:.5px}
+    .wella-title-text h3{color:#111;font-size:1.05rem;font-weight:800;margin:4px 0 0}
+    .wella-logo-img{max-height:75px;width:auto;object-fit:contain}
+    .card{border:1px solid var(--border);border-radius:12px;box-shadow:0 6px 24px rgba(23,51,89,.05);background:#fff;margin-top:25px}
+    .card-header{background:var(--blue);color:#fff;border-radius:11px 11px 0 0!important;padding:18px 25px;border:0}
+    .form-control{border-color:#d1cbc1;padding:10px 14px;border-radius:8px;min-height:46px}
+    .form-control:focus{border-color:var(--blue);box-shadow:0 0 0 .25rem rgba(23,51,89,.15)}
+    .btn-custom{background:var(--blue);color:#fff;font-weight:700;border:0;border-radius:8px;padding:10px 18px}
+    .btn-custom:hover{background:var(--blue-hover);color:#fff}
+    .btn-delete{background:#a52834;color:#fff;font-weight:700;border:0;border-radius:8px;padding:10px 18px}
+    .btn-delete:hover{background:#842029;color:#fff}
+    .request-list{display:grid;gap:10px}
+    .request-item{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;text-align:right;background:#fff;border:1px solid var(--border);border-radius:9px;padding:15px 17px;color:#2b2b2b;transition:background .15s,border-color .15s}
+    .request-item:hover,.request-item.active{background:#f3f6fa;border-color:#9aabc1}
+    .request-name{font-weight:700;color:var(--blue)}
+    .request-date{color:#6c757d;font-size:.9rem;white-space:nowrap}
+    .json-box{direction:ltr;text-align:left;white-space:pre;overflow:auto;background:#f5f1e8;border:1px solid var(--border);border-radius:9px;padding:18px;font:14px/1.6 Consolas,Monaco,monospace;min-height:180px}
+    @media(max-width:575.98px){.wella-title-text h2{font-size:.92rem}.wella-title-text h3{font-size:.88rem}.wella-logo-img{max-height:54px}.card-body{padding:1.15rem!important}.request-item{padding:13px}.request-date{font-size:.78rem}}
+  </style>
+</head>
+<body>
+  <header class="wella-header">
+    <div class="container d-flex justify-content-between align-items-center gap-3">
+      <div class="wella-title-text text-start">
+        <h2>WELLA Company for General Trading</h2>
+        <h3>شركة ويلا للتجارة العامة</h3>
+      </div>
+      <img src="imgs/logo.jpeg" alt="Wella Logo" class="wella-logo-img" onerror="this.style.display='none'">
+    </div>
+  </header>
+
+  <main class="container my-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <section class="card">
+          <div class="card-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-inbox me-2"></i> طلبات الموظفين</h5>
+            <span id="requestCount" class="badge bg-white text-dark px-3 py-2">0 طلب</span>
+          </div>
+
+          <div class="card-body p-4">
+            <form id="searchForm" class="row g-2 mb-3">
+              <div class="col">
+                <input id="searchInput" class="form-control" type="search"
+                       placeholder="ابحث بالاسم أو رقم الهوية أو الهاتف" aria-label="بحث">
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-custom h-100" type="submit">
+                  <i class="fa-solid fa-magnifying-glass me-1"></i> بحث
+                </button>
+              </div>
+            </form>
+
+            <div id="statusMessage" class="small text-muted mb-3" role="status">جارٍ تحميل الطلبات...</div>
+
+            <div class="row g-4">
+              <div class="col-lg-6">
+                <div id="requestList" class="request-list" aria-label="قائمة الطلبات"></div>
+              </div>
+              <div class="col-lg-6">
+                <div id="detailPanel" class="d-none">
+                  <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                    <h6 id="detailTitle" class="fw-bold mb-0" style="color:var(--blue)">بيانات الطلب</h6>
+                    <button id="copyButton" class="btn btn-custom" type="button">
+                      <i class="fa-regular fa-copy me-1"></i> نسخ JSON
+                    </button>
+                  </div>
+
+                  <pre id="jsonOutput" class="json-box mb-0"></pre>
+
+                  <div class="text-start mt-3">
+                    <button id="deleteButton" class="btn btn-delete" type="button">
+                      <i class="fa-solid fa-trash me-1"></i> حذف هذا الطلب
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc
+    } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB3HRMRXP2UYrnT-UOqreZy1HHcPyH3AkU",
+      authDomain: "wella-employee-intake.firebaseapp.com",
+      projectId: "wella-employee-intake",
+      storageBucket: "wella-employee-intake.firebasestorage.app",
+      messagingSenderId: "559967213413",
+      appId: "1:559967213413:web:bfc797e8bf7081a2a9338c",
+      measurementId: "G-NJ0GJQXCK0"
+    };
+
+    const statusMessage = document.getElementById("statusMessage");
+    const requestList = document.getElementById("requestList");
+    const searchForm = document.getElementById("searchForm");
+    const searchInput = document.getElementById("searchInput");
+    const requestCount = document.getElementById("requestCount");
+    const detailPanel = document.getElementById("detailPanel");
+    const jsonOutput = document.getElementById("jsonOutput");
+    const detailTitle = document.getElementById("detailTitle");
+    const copyButton = document.getElementById("copyButton");
+    const deleteButton = document.getElementById("deleteButton");
+
+    let requests = [];
+    let selectedId = null;
+    let db = null;
+
+    function formatDate(timestamp) {
+      if (!timestamp || typeof timestamp.toDate !== "function") {
+        return "التاريخ غير متوفر";
+      }
+      return new Intl.DateTimeFormat("ar-IQ", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(timestamp.toDate());
+    }
+
+    function employeeJson(employee = {}) {
+      return {
+        fullName: employee.fullName || "",
+        nationality: employee.nationality || "",
+        nationalId: employee.nationalId || "",
+        address: employee.address || "",
+        dob: employee.dob || "",
+        phoneNumber: employee.phoneNumber || "",
+        emerg1Name: employee.emerg1Name || "",
+        emerg1Phone: employee.emerg1Phone || "",
+        emerg2Name: employee.emerg2Name || "",
+        emerg2Phone: employee.emerg2Phone || ""
+      };
+    }
+
+    function renderRequests() {
+      const term = searchInput.value.trim().toLocaleLowerCase();
+
+      const filtered = requests.filter(({ employee }) => {
+        const e = employeeJson(employee);
+        return [e.fullName, e.nationalId, e.phoneNumber]
+          .some(value => value.toLocaleLowerCase().includes(term));
+      });
+
+      requestCount.textContent = `${filtered.length} طلب`;
+      requestList.replaceChildren();
+
+      if (!filtered.length) {
+        statusMessage.textContent = term ? "لا توجد نتائج مطابقة." : "لا توجد طلبات حالياً.";
+        statusMessage.className = "small text-muted mb-3";
+        return;
+      }
+
+      statusMessage.textContent = "اضغط على أي طلب لعرض JSON ونسخه.";
+      statusMessage.className = "small text-muted mb-3";
+
+      filtered.forEach(item => {
+        const employee = employeeJson(item.employee);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `request-item${item.id === selectedId ? " active" : ""}`;
+
+        const name = document.createElement("span");
+        name.className = "request-name";
+        name.textContent = employee.fullName || "بدون اسم";
+
+        const date = document.createElement("span");
+        date.className = "request-date";
+        date.textContent = formatDate(item.submittedAt);
+
+        button.append(name, date);
+        button.addEventListener("click", () => showRequest(item));
+        requestList.append(button);
+      });
+    }
+
+    function showRequest(item) {
+      selectedId = item.id;
+      const employee = employeeJson(item.employee);
+      jsonOutput.textContent = JSON.stringify(employee, null, 2);
+      detailTitle.textContent = employee.fullName || "بيانات الطلب";
+      detailPanel.classList.remove("d-none");
+      renderRequests();
+    }
+
+    searchForm.addEventListener("submit", event => {
+      event.preventDefault();
+      renderRequests();
+    });
+
+    searchInput.addEventListener("input", renderRequests);
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(jsonOutput.textContent);
+        copyButton.innerHTML = '<i class="fa-solid fa-check me-1"></i> تم النسخ';
+        setTimeout(() => {
+          copyButton.innerHTML = '<i class="fa-regular fa-copy me-1"></i> نسخ JSON';
+        }, 1400);
+      } catch {
+        statusMessage.textContent = "تعذر النسخ تلقائياً. حدّد JSON وانسخه يدوياً.";
+        statusMessage.className = "small text-danger mb-3";
+      }
+    });
+
+    deleteButton.addEventListener("click", async () => {
+      if (!selectedId) return;
+
+      if (!confirm("هل تريد حذف هذا الطلب نهائياً؟ لا يمكن التراجع عن الحذف.")) {
+        return;
+      }
+
+      deleteButton.disabled = true;
+      deleteButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جارٍ الحذف...';
+
+      try {
+        await deleteDoc(doc(db, "employeeRequests", selectedId));
+        requests = requests.filter(request => request.id !== selectedId);
+        selectedId = null;
+        detailPanel.classList.add("d-none");
+        renderRequests();
+        statusMessage.textContent = "تم حذف الطلب.";
+        statusMessage.className = "small text-success mb-3";
+      } catch (error) {
+        console.error("Could not delete employee request", error);
+        statusMessage.textContent = error.message || "تعذر حذف الطلب. تحقق من قواعد Firestore.";
+        statusMessage.className = "small text-danger mb-3";
+      } finally {
+        deleteButton.disabled = false;
+        deleteButton.innerHTML = '<i class="fa-solid fa-trash me-1"></i> حذف هذا الطلب';
+      }
+    });
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+
+      const snapshot = await getDocs(
+        query(collection(db, "employeeRequests"), orderBy("submittedAt", "desc"))
+      );
+
+      requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderRequests();
+    } catch (error) {
+      console.error("Could not load employee requests", error);
+      statusMessage.textContent = "تعذر تحميل الطلبات. تحقق من اتصال الإنترنت وإعدادات قراءة Firestore.";
+      statusMessage.className = "small text-danger mb-3";
+    }
+  </script>
+</body>
+</html>
