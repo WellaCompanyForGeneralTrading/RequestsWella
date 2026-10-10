@@ -28,7 +28,10 @@
     .request-name{font-weight:700;color:var(--blue)}
     .request-date{color:#6c757d;font-size:.9rem;white-space:nowrap}
     .json-box{direction:ltr;text-align:left;white-space:pre;overflow:auto;background:#f5f1e8;border:1px solid var(--border);border-radius:9px;padding:18px;font:14px/1.6 Consolas,Monaco,monospace;min-height:180px}
-    @media(max-width:575.98px){.wella-title-text h2{font-size:.92rem}.wella-title-text h3{font-size:.88rem}.wella-logo-img{max-height:54px}.card-body{padding:1.15rem!important}.request-item{padding:13px}.request-date{font-size:.78rem}}
+    .document-downloads{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .document-downloads .btn{min-height:44px}
+    .document-download-status{min-height:22px}
+    @media(max-width:575.98px){.wella-title-text h2{font-size:.92rem}.wella-title-text h3{font-size:.88rem}.wella-logo-img{max-height:54px}.card-body{padding:1.15rem!important}.request-item{padding:13px}.request-date{font-size:.78rem}.document-downloads{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -81,6 +84,25 @@
 
                   <pre id="jsonOutput" class="json-box mb-0"></pre>
 
+                  <div class="mt-3">
+                    <h6 class="fw-bold mb-2" style="color:var(--blue)">مرفقات الموظف</h6>
+                    <div class="document-downloads">
+                      <button id="downloadFrontButton" class="btn btn-custom" type="button" disabled>
+                        <i class="fa-solid fa-download me-1"></i> صورة الجنسية - الوجه الأمامي
+                      </button>
+                      <button id="downloadBackButton" class="btn btn-custom" type="button" disabled>
+                        <i class="fa-solid fa-download me-1"></i> صورة الجنسية - الوجه الخلفي
+                      </button>
+                      <button id="downloadGraduationButton" class="btn btn-custom" type="button" disabled>
+                        <i class="fa-solid fa-download me-1"></i> شهادة التخرج
+                      </button>
+                      <button id="downloadOtherButton" class="btn btn-custom" type="button" disabled>
+                        <i class="fa-solid fa-download me-1"></i> شهادات أخرى
+                      </button>
+                    </div>
+                    <div id="documentDownloadStatus" class="document-download-status small text-muted mt-2" role="status" aria-live="polite"></div>
+                  </div>
+
                   <div class="text-start mt-3">
                     <button id="openFormButton" class="btn btn-custom me-2" type="button">
                       <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> فتح في نموذج العقود
@@ -103,6 +125,9 @@
     import {
       getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc
     } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+    import {
+      getStorage, ref, deleteObject
+    } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB3HRMRXP2UYrnT-UOqreZy1HHcPyH3AkU",
@@ -125,10 +150,17 @@
     const copyButton = document.getElementById("copyButton");
     const openFormButton = document.getElementById("openFormButton");
     const deleteButton = document.getElementById("deleteButton");
+    const documentDownloadStatus = document.getElementById("documentDownloadStatus");
+    const downloadFrontButton = document.getElementById("downloadFrontButton");
+    const downloadBackButton = document.getElementById("downloadBackButton");
+    const downloadGraduationButton = document.getElementById("downloadGraduationButton");
+    const downloadOtherButton = document.getElementById("downloadOtherButton");
 
     let requests = [];
     let selectedId = null;
     let db = null;
+    let storage = null;
+    let selectedRequest = null;
 
     function formatDate(timestamp) {
       if (!timestamp || typeof timestamp.toDate !== "function") {
@@ -154,6 +186,56 @@
         emerg2Phone: employee.emerg2Phone || ""
       };
     }
+
+    function updateDocumentButtons(item) {
+      const documents = item?.documents || {};
+      const otherFiles = Array.isArray(documents.otherCertificateUrls)
+        ? documents.otherCertificateUrls.filter(url => typeof url === "string" && url.trim())
+        : [];
+      downloadFrontButton.disabled = !documents.nationalityFrontUrl;
+      downloadBackButton.disabled = !documents.nationalityBackUrl;
+      downloadGraduationButton.disabled = !documents.graduationCertificateUrl;
+      downloadOtherButton.disabled = otherFiles.length === 0;
+      downloadOtherButton.innerHTML = `<i class="fa-solid fa-download me-1"></i> شهادات أخرى${otherFiles.length ? ` (${otherFiles.length})` : ""}`;
+      const hasFiles = Boolean(documents.nationalityFrontUrl || documents.nationalityBackUrl || documents.graduationCertificateUrl || otherFiles.length);
+      documentDownloadStatus.textContent = hasFiles
+        ? "اضغط على الزر لفتح رابط المرفق."
+        : "لا توجد مرفقات محفوظة لهذا الطلب.";
+      documentDownloadStatus.className = "document-download-status small text-muted mt-2";
+    }
+
+    function openDocument(url) {
+      if (!url) return;
+      window.open(url, "_blank", "noopener,noreferrer");
+      documentDownloadStatus.textContent = "تم فتح رابط المرفق في تبويب جديد.";
+      documentDownloadStatus.className = "document-download-status small text-success mt-2";
+    }
+
+    downloadFrontButton.addEventListener("click", () =>
+      openDocument(selectedRequest?.documents?.nationalityFrontUrl)
+    );
+
+    downloadBackButton.addEventListener("click", () =>
+      openDocument(selectedRequest?.documents?.nationalityBackUrl)
+    );
+
+    downloadGraduationButton.addEventListener("click", () =>
+      openDocument(selectedRequest?.documents?.graduationCertificateUrl)
+    );
+
+    downloadOtherButton.addEventListener("click", () => {
+      const urls = selectedRequest?.documents?.otherCertificateUrls;
+      const files = Array.isArray(urls)
+        ? urls.filter(url => typeof url === "string" && url.trim())
+        : [];
+
+      files.forEach(url => window.open(url, "_blank", "noopener,noreferrer"));
+
+      if (files.length) {
+        documentDownloadStatus.textContent = "تم فتح روابط الشهادات في تبويبات جديدة.";
+        documentDownloadStatus.className = "document-download-status small text-success mt-2";
+      }
+    });
 
     function renderRequests() {
       const term = searchInput.value.trim().toLocaleLowerCase();
@@ -198,11 +280,32 @@
 
     function showRequest(item) {
       selectedId = item.id;
+      selectedRequest = item;
       const employee = employeeJson(item.employee);
       jsonOutput.textContent = JSON.stringify(employee, null, 2);
       detailTitle.textContent = employee.fullName || "بيانات الطلب";
       detailPanel.classList.remove("d-none");
+      updateDocumentButtons(item);
       renderRequests();
+    }
+
+    async function deleteRequestFiles(item) {
+      const documents = item?.documents || {};
+      const urls = [
+        documents.nationalityFrontUrl,
+        documents.nationalityBackUrl,
+        documents.graduationCertificateUrl,
+        ...(Array.isArray(documents.otherCertificateUrls) ? documents.otherCertificateUrls : [])
+      ].filter((url, index, all) => typeof url === "string" && url.trim() && all.indexOf(url) === index);
+
+      for (const url of urls) {
+        try {
+          await deleteObject(ref(storage, url));
+        } catch (error) {
+          // A file already removed by a previous partial attempt is considered cleared.
+          if (error?.code !== "storage/object-not-found") throw error;
+        }
+      }
     }
 
     searchForm.addEventListener("submit", event => {
@@ -248,9 +351,12 @@
       deleteButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جارٍ الحذف...';
 
       try {
+        const requestToDelete = requests.find(request => request.id === selectedId);
+        await deleteRequestFiles(requestToDelete);
         await deleteDoc(doc(db, "employeeRequests", selectedId));
         requests = requests.filter(request => request.id !== selectedId);
         selectedId = null;
+        selectedRequest = null;
         detailPanel.classList.add("d-none");
         renderRequests();
         statusMessage.textContent = "تم حذف الطلب.";
@@ -268,6 +374,7 @@
     try {
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
+      storage = getStorage(app);
 
       const snapshot = await getDocs(
         query(collection(db, "employeeRequests"), orderBy("submittedAt", "desc"))
