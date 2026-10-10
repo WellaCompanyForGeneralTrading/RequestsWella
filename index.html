@@ -82,6 +82,9 @@
                   <pre id="jsonOutput" class="json-box mb-0"></pre>
 
                   <div class="text-start mt-3">
+                    <button id="openFormButton" class="btn btn-custom me-2" type="button">
+                      <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> فتح في نموذج العقود
+                    </button>
                     <button id="deleteButton" class="btn btn-delete" type="button">
                       <i class="fa-solid fa-trash me-1"></i> حذف هذا الطلب
                     </button>
@@ -120,6 +123,7 @@
     const jsonOutput = document.getElementById("jsonOutput");
     const detailTitle = document.getElementById("detailTitle");
     const copyButton = document.getElementById("copyButton");
+    const openFormButton = document.getElementById("openFormButton");
     const deleteButton = document.getElementById("deleteButton");
 
     let requests = [];
@@ -217,6 +221,18 @@
         }, 1400);
       } catch {
         statusMessage.textContent = "تعذر النسخ تلقائياً. حدّد JSON وانسخه يدوياً.";
+        statusMessage.className = "small text-danger mb-3";
+      }
+    });
+
+    openFormButton.addEventListener("click", () => {
+      if (!selectedId) return;
+      try {
+        sessionStorage.setItem("wellaEmployeeJsonHandoff", jsonOutput.textContent);
+        window.location.href = "https://pixelinkofficial.github.io/WellaForm/";
+      } catch (error) {
+        console.error("Could not pass employee data to the form", error);
+        statusMessage.textContent = "تعذر نقل البيانات. افتح القارئ ونموذج العقود على نفس المتصفح.";
         statusMessage.className = "small text-danger mb-3";
       }
     });
