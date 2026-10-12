@@ -173,19 +173,24 @@
     }
 
     function employeeJson(employee = {}) {
-      return {
-        fullName: employee.fullName || "",
-        nationality: employee.nationality || "",
-        nationalId: employee.nationalId || "",
-        address: employee.address || "",
-        dob: employee.dob || "",
-        phoneNumber: employee.phoneNumber || "",
-        emerg1Name: employee.emerg1Name || "",
-        emerg1Phone: employee.emerg1Phone || "",
-        emerg2Name: employee.emerg2Name || "",
-        emerg2Phone: employee.emerg2Phone || ""
-      };
-    }
+  return {
+    fullName: employee.fullName || "",
+    nationality: employee.nationality || "",
+    nationalId: employee.nationalId || "",
+    address: employee.address || "",
+    nearestPoint: employee.nearestPoint || "",
+    dob: employee.dob || "",
+    maritalStatus: employee.maritalStatus || "",
+    phoneNumber: employee.phoneNumber || "",
+    university: employee.university || "",
+    degree: employee.degree || "",
+    specialization: employee.specialization || "",
+    emerg1Name: employee.emerg1Name || "",
+    emerg1Phone: employee.emerg1Phone || "",
+    emerg2Name: employee.emerg2Name || "",
+    emerg2Phone: employee.emerg2Phone || ""
+  };
+}
 
     function updateDocumentButtons(item) {
       const documents = item?.documents || {};
