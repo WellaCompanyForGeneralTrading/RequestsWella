@@ -224,18 +224,41 @@
     );
 
     downloadOtherButton.addEventListener("click", () => {
-      const urls = selectedRequest?.documents?.otherCertificateUrls;
-      const files = Array.isArray(urls)
-        ? urls.filter(url => typeof url === "string" && url.trim())
-        : [];
+  const urls = selectedRequest?.documents?.otherCertificateUrls;
+  const files = Array.isArray(urls)
+    ? [...new Set(urls.filter(url => typeof url === "string" && url.trim()))]
+    : [];
 
-      files.forEach(url => window.open(url, "_blank", "noopener,noreferrer"));
+  documentDownloadStatus.replaceChildren();
+  documentDownloadStatus.className =
+    "document-download-status small text-muted mt-2";
 
-      if (files.length) {
-        documentDownloadStatus.textContent = "تم فتح روابط الشهادات في تبويبات جديدة.";
-        documentDownloadStatus.className = "document-download-status small text-success mt-2";
-      }
-    });
+  if (!files.length) {
+    documentDownloadStatus.textContent =
+      "لا توجد شهادات أخرى محفوظة لهذا الطلب.";
+    return;
+  }
+
+  const message = document.createElement("div");
+  message.textContent =
+    `تم العثور على ${files.length} شهادة. اضغط على كل شهادة لفتحها وتنزيلها.`;
+
+  const linkList = document.createElement("div");
+  linkList.className = "d-flex flex-wrap gap-2 mt-2";
+
+  files.forEach((url, index) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "btn btn-outline-primary btn-sm";
+    link.textContent = `فتح الشهادة ${index + 1}`;
+    linkList.appendChild(link);
+  });
+
+  documentDownloadStatus.append(message, linkList);
+});
+
 
     function renderRequests() {
       const term = searchInput.value.trim().toLocaleLowerCase();
